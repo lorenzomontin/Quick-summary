@@ -1,3 +1,4 @@
 .ipynb_checkpoints/
 saved_bart_model/
 myenv/
+bart_cnn_finetuned/
