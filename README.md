@@ -16,18 +16,27 @@ Standard abstractive summarisation optimises for content overlap with a referenc
 
 > **Can a BART summarisation model be conditioned on the sentiment of an article, and does this improve sentiment preservation without substantially degrading summarisation quality?**
 
-The interesting result here is not a universal win. The experiment surfaces a trade-off between sentiment preservation and conventional content-overlap metrics. That trade-off, and the reasoning behind it, is the actual contribution of this project.
+The interesting result here is not a universal win. The experiment surfaces a trade-off between sentiment preservation and conventional content-overlap metrics. That trade-off, and the reasoning behind it, is the main finding of this project.
 
 ## Approach
 
 ```mermaid
-flowchart TD
-    A[News article] --> B[Sentiment classification<br/>RoBERTa, 3-sentence chunks]
-    B --> C["Sentiment-conditioned input<br/>[NEGATIVE] / [NEUTRAL] / [POSITIVE] prefixes"]
-    C --> D[BART fine-tuning]
-    D --> E[Generated summary]
-    E --> F[ROUGE]
-    E --> G[Sentiment alignment]
+flowchart LR
+    A["CNN/DailyMail<br/>News article"]
+    B["RoBERTa<br/>Sentiment tagging"]
+    C["Sentiment-conditioned<br/>input"]
+    D["BART<br/>Fine-tuning"]
+    E["Generated<br/>summary"]
+
+    F["ROUGE"]
+    G["Sentiment<br/>alignment"]
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    E --> G
 ```
 
 ## Dataset
@@ -124,6 +133,34 @@ Sentiment alignment improves meaningfully under conditioning, while ROUGE-1/2/L 
 
 **Sentiment preservation — sentiment alignment.** For a given text, it's split into paragraphs, each is scored by the same RoBERTa sentiment classifier used for tagging, and the resulting probability vectors (negative/neutral/positive) are averaged into one vector per text. Sentiment alignment is the **cosine similarity** between the source article's vector and the generated summary's vector, ranging from -1 (opposite sentiment) to 1 (identical sentiment profile). It is a similarity score, not an accuracy metric as it says nothing about factual correctness, only about whether the emotional tone was preserved.
 
+## Reproducibility
+
+Requires a GPU (developed and tested on Colab's free-tier T4).
+
+```text
+clone repository
+        ↓
+pip install -r requirements.txt
+        ↓
+run sentiment_tagging.ipynb        (builds data/tagged_train_nltk, data/tagged_val_nltk)
+        ↓
+run bart_sentiment_finetuning.py   (produces models/bart_sentiment_controlled)
+        ↓
+run evaluate.ipynb                 (produces the Results table above)
+```
+
+```bash
+git clone <repo-url>
+cd Quick-summary
+pip install -r requirements.txt
+```
+
+Then, in order:
+
+1. Run `sentiment_tagging.ipynb` top to bottom.
+2. Run `bart_sentiment_finetuning.py` (e.g. `python bart_sentiment_finetuning.py`). If `data/` or `models/bart_base_cnn` don't exist yet, the script builds/downloads them itself.
+3. Run `evaluate.ipynb` top to bottom to reproduce the Results table.
+
 ## Project Structure
 
 ```text
@@ -154,33 +191,6 @@ Quick-summary/
 
 Reusable logic (sentiment tagging, alignment scoring) is kept in a standalone module rather than duplicated across notebooks; data preparation, training, and evaluation are kept as separate, independently runnable stages.
 
-## Reproducibility
-
-Requires a GPU (developed and tested on Colab's free-tier T4).
-
-```text
-clone repository
-        ↓
-pip install -r requirements.txt
-        ↓
-run sentiment_tagging.ipynb        (builds data/tagged_train_nltk, data/tagged_val_nltk)
-        ↓
-run bart_sentiment_finetuning.py   (produces models/bart_sentiment_controlled)
-        ↓
-run evaluate.ipynb                 (produces the Results table above)
-```
-
-```bash
-git clone <repo-url>
-cd Quick-summary
-pip install -r requirements.txt
-```
-
-Then, in order:
-
-1. Run `sentiment_tagging.ipynb` top to bottom.
-2. Run `bart_sentiment_finetuning.py` (e.g. `python bart_sentiment_finetuning.py`). If `data/` or `models/bart_base_cnn` don't exist yet, the script builds/downloads them itself.
-3. Run `evaluate.ipynb` top to bottom to reproduce the Results table.
 
 ## Limitations
 
